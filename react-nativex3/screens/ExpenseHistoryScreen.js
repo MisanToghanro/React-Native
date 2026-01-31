@@ -4,7 +4,14 @@ import { useExpenseContext } from "../contex-store/Expense-app-Context"
 
 const ExpenseHistoryScreen = () => {
 
-    const {expenses} = useExpenseContext();
+    const {expenses, fetchingExpenses} = useExpenseContext();
+
+      if (fetchingExpenses) {
+    
+        return(
+          <LoadingSpinner/>
+        )
+      }
     return(
         <View style={{flex:1}}>
             <ExpenseOutput expenses={expenses} periodName="Total Expenses"/>

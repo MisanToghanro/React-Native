@@ -1,29 +1,39 @@
+import {
+    fetchExpenses,
+    addExpense as addExpenseToFirebase,
+    deleteExpense as deleteExpenseFromFirebase,
+    updateExpense as updateExpenseInFirebase,
+} from "../fireBase/https"
+import { useEffect, useState } from "react";
 import { createContext, useContext, useReducer } from "react";
-import { DUMMY_EXPENSES } from "../data/dummy-expenses";
+
 
 
 const ExpenseContext = createContext({
     expenses:[],
-    addExpense: (expenseData) => {},
-    deleteExpense:(id) => {},
-    updateExpense:(id,expenseData) => {}
+    addExpense: () => {},
+    deleteExpense:() => {},
+    updateExpense:() => {},
+    fetchingExpenses: false
 });
 
 const expenseReducer = (state, action) => {
 
     switch (action.type) {
    
+        case "SET" :
+            return action.payload;
+
         case "ADD" :  
-        const id =  Date.now().toString()
-        return [ {...action.payload, id: id}, ...state];
+        return [ action.payload, ...state];
 
         case "DELETE": return state.filter((expense) => expense.id !== action.payload);
 
         case "UPDATE":
-  return state.map(exp =>
-    exp.id === action.payload.id
-      ? { ...exp, ...action.payload.expenseData}
-      : exp
+  return state.map(expense =>
+    expense.id === action.payload.id
+      ? { ...expense, ...action.payload.expenseData}
+      : expense
   );
 
   default: return state
@@ -36,26 +46,60 @@ export const ExpenseContextProvider = ({children}) => {
 
     const [expensesState, dispatch] = useReducer (
         expenseReducer,
-        DUMMY_EXPENSES
+        []
     )
+    const [fetchingExpenses, setFetchingExpenses] = useState(true)
 
-    const addExpense = (expenseData) => {
-      dispatch({type:"ADD", payload:expenseData})
-    };
-
-    const deleteExpense = (id) => {
-     dispatch({type:"DELETE", payload:id})
+    useEffect(() => {
+        const loadExpenses = async () => {
+          setFetchingExpenses(true)
+           try {
+      const expenses = await fetchExpenses();
+      dispatch({ type: "SET", payload: expenses });
+    } catch (error) {
+      console.log("Failed to fetch expenses:", error);
+    }finally{
+      setFetchingExpenses(false)
     }
+        };
+        loadExpenses();
+    },[]);
 
-    const updateExpense = (id, expenseData) => {
-        dispatch({
-            type:"UPDATE",
-            payload: {id, expenseData}
-        })
-    }
+
+
+    const addExpense = async (expenseData) => {
+  const id = await addExpenseToFirebase(expenseData);
+
+  dispatch({
+    type: "ADD",
+    payload: { ...expenseData, id },
+  });
+};
+
+
+const deleteExpense = async (id) => {
+  await deleteExpenseFromFirebase(id);
+
+  dispatch({
+    type: "DELETE",
+    payload: id,
+  });
+};
+
+
+const updateExpense = async (id, expenseData) => {
+  await updateExpenseInFirebase(id, expenseData);
+
+  dispatch({
+    type: "UPDATE",
+    payload: { id, expenseData },
+  });
+};
+
     return(
         <ExpenseContext.Provider value={{
             expenses:expensesState,
+            fetchingExpenses,
             addExpense,
             deleteExpense,
             updateExpense

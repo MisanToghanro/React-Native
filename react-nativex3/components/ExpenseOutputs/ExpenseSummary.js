@@ -6,6 +6,14 @@ const ExpenseSummary = ({expenses, period}) => {
     const totalAmount = expenses.reduce((sum, expense) => {
         return sum + expense.amount;
     }, 0)
+
+        if (expenses.length === 0) {
+          return(
+            <View style={styles.container}>
+              <Text style={styles.period}>You have no expenses, click the plus sign above to add one</Text>
+            </View>
+          )
+        }
     
     return(
         <View style={styles.container}>

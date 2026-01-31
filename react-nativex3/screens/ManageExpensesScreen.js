@@ -1,14 +1,17 @@
 import { View, Text, StyleSheet } from "react-native";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import IconButton from "../components/Buttons/IconButton";
 import CustomButton from "../components/Buttons/CustomButton";
 import { useExpenseContext } from "../contex-store/Expense-app-Context";
+import ExpenseForm from "../components/ExpenseForm";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const ManageExpensesScreen = ({ route }) => {
 
-  const { addExpense, updateExpense, deleteExpense } = useExpenseContext();
-
+  const { addExpense, updateExpense, deleteExpense, expenses } = useExpenseContext();
+   const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState(null)
   const navigation = useNavigation();
 
   const expenseId = route.params?.expenseId;
@@ -21,6 +24,7 @@ const ManageExpensesScreen = ({ route }) => {
   }, [navigation, editExpense]);
 
   const deleteExpenseHandler = () => {
+    setSubmitting(true)
     deleteExpense(expenseId)
     navigation.goBack();
   };
@@ -29,35 +33,46 @@ const ManageExpensesScreen = ({ route }) => {
     navigation.goBack();
   };
 
-  const confirmExpenseHandler = () => {
+const confirmExpenseHandler = async (expenseData) => {
+  setSubmitting(true);
+  setError(null);
 
-    const expenseData = {
-      description: "Test Expense",
-      amount: 100,
-      date: new Date().toISOString()
-    };
-
-        if (editExpense) {
-      updateExpense(expenseId, expenseData);
+  try {
+    if (editExpense) {
+      await updateExpense(expenseId, expenseData);
     } else {
-      addExpense(expenseData);
+      await addExpense(expenseData);
     }
 
-
     navigation.goBack();
-  };
+  } catch (error) {
+    setError("Could not save expense. Please try again.");
+    setSubmitting(false);
+  }
+};
+
+
+if (submitting) {
+  return (
+   <LoadingSpinner/>
+  );
+}
+
+const exisitingExpense = expenses.find(
+  (expense) => expense.id === expenseId
+);
 
   return (
     <View style={styles.container}>
-      
 
-      <View style={styles.actions}>
-        <CustomButton onPress={cancelHandler}>Cancel</CustomButton>
+      <ExpenseForm
+      onsubmit={confirmExpenseHandler}
+      onCancel={cancelHandler}
+      submitLabel={editExpense ? "Edit Expense" : "Add Expense"}
+      currentValue={exisitingExpense}
+      submitting={submitting}
+      />
 
-        <CustomButton danger onPress={confirmExpenseHandler}>
-          {editExpense ? "Edit Expense" : "Add Expense"}
-        </CustomButton>
-      </View>
 
       {editExpense && (
         <View style={styles.deleteContainer}>
@@ -79,11 +94,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 24,
   },
   deleteContainer: {
     marginTop: 32,
