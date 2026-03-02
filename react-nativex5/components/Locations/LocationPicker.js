@@ -4,13 +4,18 @@ import { useState } from "react";
 import * as Location from "expo-location"
 import Card from "../UI/Card";
 import { Colors } from "../../constants/colors";
-
-
+import MapPreview from "./MapPreview";
+import { useNavigation } from "@react-navigation/native";
 
 const LocationPickerComp = ({onPickLocation}) => {
+
+const navigation = useNavigation();
+
 const [pickedLocation, setPickedLocation] = useState(null);
 const [permissionStatus, setPermissionStatus] = useState(null);
 const [errorMsg, setErrorMsg] = useState("")
+
+
 
     const getCurrentLocation = async () => {
         setErrorMsg("")
@@ -28,12 +33,13 @@ const [errorMsg, setErrorMsg] = useState("")
 
          const location = await Location.getCurrentPositionAsync();
 
-             const coordinates = {
+      const coordinates = {
       lat: location.coords.latitude,
       lng: location.coords.longitude,
     };
 
     setPickedLocation(coordinates);
+    console.log(location);
     onPickLocation(coordinates)
 
     
@@ -41,40 +47,37 @@ const [errorMsg, setErrorMsg] = useState("")
 
 
     const pickMapLocation = () => {
-
+      navigation.navigate("Map", {
+        initialLocation: pickedLocation
+      });
     }
+    
     return (
         <Card style={styles.container}>
+
             {errorMsg && (
                 <View style={[styles.msgContainer,
                 permissionStatus === "granted" ? styles.success : styles.error]}>
                     <Text style={styles.msgText}>{errorMsg}</Text>
-            </View>
-            )}
+            </View> )}
 
             <View style={styles.preview}>
 
                 {pickedLocation ? (
-          <View>
-         <Text style={styles.placeholderText}>
-            Lat: {pickedLocation.lat.toFixed(4)} | Lng:{" "}
-            {pickedLocation.lng.toFixed(4)}
-          </Text>
-         </View>
+                   <View style={{ flex: 1, width: "100%" }}>
+                    <MapPreview location={pickedLocation} />
+                    </View>
+        
                 ) : (
                     <Text style={styles.placeholderText}>No location chosen yet</Text>
                 )}
-        </View>
+               </View>
 
-            <View>
 
-               {permissionStatus !== "denied" && (
-          <CustomButton onPress={getCurrentLocation}>
-           Get Current Location
-           </CustomButton>
-              )}
-
-                <CustomButton onPress={pickMapLocation}>Pick a Loaction</CustomButton>
+            <View>       
+          <CustomButton onPress={getCurrentLocation}>Get Current Location</CustomButton>
+              
+          <CustomButton onPress={pickMapLocation}>Open Map</CustomButton>
             </View>
 
         </Card>
@@ -87,6 +90,7 @@ const styles = StyleSheet.create({
   },
   preview:{
 height:200,
+overflow:"hidden",
 justifyContent:"center",
 alignItems:"center",
 borderWidth:1,
@@ -106,12 +110,13 @@ marginBottom:12
     marginBottom: 12,
   },
     success: {
-    backgroundColor: "#4bda6c",
+    backgroundColor: "#46cf66",
   },
 
   msgText: {
     color: "white",
     textAlign: "center",
+    fontWeight:"semibold"
   },
 })
 
