@@ -6,18 +6,42 @@ import * as Location from "expo-location"
 import LoadingSpinner from "../components/UI/Spinner"
 
 const MapScreen = ({ navigation, route }) => {
+  
+  const {onPickLocation} = route.params || {}
   const initialLocation = route.params?.initialLocation;
 
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
   const [alert, setAlert] = useState("");
   const [mapRegion, setMapRegion] = useState(null);
 
-  const selectMapLocationHandler = (event) => {
+  const selectMapLocationHandler = async (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
+
+    const addressResponse = await Location.reverseGeocodeAsync({
+      longitude,
+      latitude
+    });
+
+    if (!addressResponse || addressResponse.length === 0) {
+  return;}
+
+    const addressObj = addressResponse[0];
+
+    const address = [
+  addressObj.name,
+  addressObj.street,
+  addressObj.city,
+  addressObj.country,
+]
+  .filter(Boolean)
+  .join(", ");
+
+
 
     setSelectedMapLocation({
       lat: latitude,
       lng: longitude,
+      address:address
     });
   };
 
@@ -25,7 +49,6 @@ const MapScreen = ({ navigation, route }) => {
     if (!selectedMapLocation) {
       setAlert("No location picked, please tap a desired location on the map");
 
-      // 🔥 Auto hide after 3s
       setTimeout(() => {
         setAlert("");
       }, 3000);
@@ -33,9 +56,10 @@ const MapScreen = ({ navigation, route }) => {
       return;
     }
 
-    navigation.navigate("AddLocation", {
-      pickedLocation: selectedMapLocation,
-    });
+    if(onPickLocation ){
+      onPickLocation(selectedMapLocation)
+    }
+  navigation.goBack()
   };
 
   useLayoutEffect(() => {
@@ -53,7 +77,7 @@ const MapScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     const getUserLocation = async () => {
-      // 🔹 If coming with an existing location
+      // If coming with an existing location
       if (initialLocation) {
         const region = {
           latitude: initialLocation.lat,
@@ -64,7 +88,7 @@ const MapScreen = ({ navigation, route }) => {
 
         setMapRegion(region);
 
-        // 🔥 Auto set marker
+        // set marker
         setSelectedMapLocation(initialLocation);
 
         return;
@@ -83,22 +107,45 @@ const MapScreen = ({ navigation, route }) => {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync();
+       const location = await Location.getCurrentPositionAsync();
 
-      const coords = {
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      };
+const coords = {
+  lat: location.coords.latitude,
+  lng: location.coords.longitude,
+};
 
-      setMapRegion({
-        latitude: coords.lat,
-        longitude: coords.lng,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      });
+const addressResponse = await Location.reverseGeocodeAsync({
+  latitude: coords.lat,
+  longitude: coords.lng,
+});
 
-      // 🔥 Auto pin user location
-      setSelectedMapLocation(coords);
+if (!addressResponse || addressResponse.length === 0) {
+  return;
+}
+
+const addressObj = addressResponse[0];
+
+const address = [
+  addressObj.name,
+  addressObj.street,
+  addressObj.city,
+  addressObj.country,
+]
+  .filter(Boolean)
+  .join(", ");
+
+setMapRegion({
+  latitude: coords.lat,
+  longitude: coords.lng,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+});
+
+setSelectedMapLocation({
+  ...coords,
+  address: address,
+});
+
     };
 
     getUserLocation();

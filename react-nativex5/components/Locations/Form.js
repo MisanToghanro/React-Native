@@ -1,4 +1,6 @@
-import { useState } from "react";
+
+
+import { useEffect, useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native"
 import CustomButton from "../UI/CustomButton";
 import { StyleSheet } from "react-native";
@@ -8,17 +10,31 @@ import Card from "../UI/Card";
 import { Colors } from "../../constants/colors";
 
 
-const Form = ({onCreateLocation}) => {
+
+const Form = ({onCreateLocation, pickedLocation}) => {
 
     const [title, setTitle] = useState("");
-    const [address , setAddress] = useState("");
     const [mediaUri, setMediaUri] = useState(null);
     const [userLocation, setUserLocation] = useState(null);
 
 
+
+    useEffect(() => {
+      if(pickedLocation) {
+        setUserLocation(pickedLocation);
+      }
+    }, [pickedLocation])
+
     const submithandler = () => {
+
+      if (!title || !mediaUri || !userLocation) {
+        return ;
+      }
         const locationData ={
-            title,address, mediaUri, userLocation
+            title,
+            imageUri: mediaUri, 
+            lat: userLocation.lat,
+            lng: userLocation.lng
         }
 
         onCreateLocation(locationData)
@@ -48,18 +64,6 @@ const Form = ({onCreateLocation}) => {
           />
         </View>
 
-        {/* Address */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Address</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter address"
-            placeholderTextColor={Colors.primary50}
-            value={address}
-            onChangeText={setAddress}
-            multiline
-          />
-        </View>
 
         {/* Image */}
         <View style={styles.section}>

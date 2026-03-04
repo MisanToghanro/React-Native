@@ -1,4 +1,5 @@
 import { StyleSheet, View,Text } from "react-native"
+import { useRoute } from "@react-navigation/native";
 import CustomButton from "../UI/CustomButton";
 import { useState } from "react";
 import * as Location from "expo-location"
@@ -6,15 +7,24 @@ import Card from "../UI/Card";
 import { Colors } from "../../constants/colors";
 import MapPreview from "./MapPreview";
 import { useNavigation } from "@react-navigation/native";
+import { useEffect } from "react";
 
 const LocationPickerComp = ({onPickLocation}) => {
 
 const navigation = useNavigation();
+const route = useRoute();
 
 const [pickedLocation, setPickedLocation] = useState(null);
 const [permissionStatus, setPermissionStatus] = useState(null);
 const [errorMsg, setErrorMsg] = useState("")
 
+
+  useEffect(() => {
+  if (route.params?.pickedLocation) {
+    setPickedLocation(route.params.pickedLocation);
+    onPickLocation(route.params.pickedLocation);
+  }
+}, [route.params]);
 
 
     const getCurrentLocation = async () => {
@@ -28,6 +38,10 @@ const [errorMsg, setErrorMsg] = useState("")
 
          setPermissionStatus("granted");
           setErrorMsg("Permission granted!")
+
+          setTimeout(() => {
+            setErrorMsg("")
+          }, 3000);
 
 
 
@@ -48,7 +62,8 @@ const [errorMsg, setErrorMsg] = useState("")
 
     const pickMapLocation = () => {
       navigation.navigate("Map", {
-        initialLocation: pickedLocation
+        initialLocation: pickedLocation,
+        onPickLocation: onPickLocation
       });
     }
     
@@ -66,6 +81,9 @@ const [errorMsg, setErrorMsg] = useState("")
                 {pickedLocation ? (
                    <View style={{ flex: 1, width: "100%" }}>
                     <MapPreview location={pickedLocation} />
+                    {pickedLocation.address && (
+                      <Text style={styles.addressText}>{pickedLocation.address}</Text>
+                    )}
                     </View>
         
                 ) : (
@@ -115,6 +133,11 @@ marginBottom:12
 
   msgText: {
     color: "white",
+    textAlign: "center",
+    fontWeight:"semibold"
+  },
+    addressText: {
+    color: "black",
     textAlign: "center",
     fontWeight:"semibold"
   },
